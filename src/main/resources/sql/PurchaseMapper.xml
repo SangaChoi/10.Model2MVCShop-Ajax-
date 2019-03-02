@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper
+		PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="PurchaseMapper">
+
+	<resultMap id="purchaseSelectMap" type="purchase">
+		<result property="buyer.userId"	column="BUYER_ID"	jdbcType="VARCHAR"/>
+		<result property="divyAddr"	column="DEMAILADDR"	jdbcType="VARCHAR"/>
+		<result property="receiverDate"	column="DLVY_DATE"	jdbcType="DATE"/>
+		<result property="divyRequest"	column="DLVY_REQUEST"	jdbcType="VARCHAR"/>
+		<result property="orderDate"	column="ORDER_DATE"	jdbcType="DATE"/>
+		<result property="paymentOption"	column="PAYMENT_OPTION"	jdbcType="VARCHAR"/>
+		<result property="purchaseProd.prodNo"	column="PROD_NO"	jdbcType="NUMERIC"/>
+		<result property="receiverName" column="RECEIVER_NAME"	jdbcType="VARCHAR"/>
+		<result property="receiverPhone"	column="RECEIVER_PHONE"	jdbcType="VARCHAR"/>
+		<result property="tranCode"	column="TRAN_STATUS_CODE"	jdbcType="VARCHAR"/>
+		<result property="tranNo"	column="TRAN_NO"	jdbcType="NUMERIC"/>	
+	</resultMap>
+ 	
+ 	<insert id="addPurchase" parameterType="purchase">
+ 		INSERT
+ 		INTO transaction
+ 		VALUES (seq_transaction_tran_no.nextval,#{purchaseProd.prodNo},#{buyer.userId},#{paymentOption},#{receiverName},#{receiverPhone},#{divyAddr},#{divyRequest},#{tranCode},SYSDATE,#{receiverDate})	
+ 	</insert>
+ 	
+ 	<select id="getPurchase" parameterType="int" resultMap="purchaseSelectMap">
+ 		SELECT * FROM transaction
+ 		WHERE tran_no=#{value}
+ 	</select>
+ 	
+ 	<update id="updatePurchase" parameterType="purchase">
+ 		UPDATE transaction
+ 		<set>
+ 			payment_option=#{paymentOption},
+ 			receiver_name=#{receiverName},
+			receiver_phone=#{receiverPhone},
+			demailaddr=#{divyAddr},
+			dlvy_request=#{divyRequest},
+			dlvy_date=#{receiverDate}
+ 		</set>
+ 		WHERE tran_no=#{tranNo}
+ 	</update>
+ 	
+ 	<select id="getPurchaseList" parameterType="map"	resultMap="purchaseSelectMap">
+ 	SELECT *
+	FROM (	SELECT inner_table.* , ROWNUM AS row_seq
+			FROM
+				(SELECT PROD_NO, BUYER_ID, RECEIVER_PHONE, TRAN_STATUS_CODE, TRAN_NO
+				FROM transaction
+				WHERE buyer_id=#{buyerId}) inner_table
+			WHERE ROWNUM &lt;= #{search.endRowNum} )
+	WHERE row_seq BETWEEN #{search.startRowNum} AND #{search.endRowNum}
+ 	</select>
+ 	
+	<select  id="getTotalCount"  parameterType="user"	 resultType="int">
+	  	SELECT COUNT(*)
+	  	FROM(	SELECT *
+				FROM transaction
+				WHERE buyer_id=#{userId}
+			) countTable					
+	 </select>
+	 
+	 <update id="updateTranCode" parameterType="purchase"> 
+		UPDATE transaction
+		<set>
+		tran_status_code=#{tranCode}
+		</set>
+		
+		<choose>
+			<when test="tranCode==2">
+				WHERE prod_no=#{purchaseProd.prodNo}
+			</when>
+			<when test="tranCode==3">
+				WHERE tran_no=#{tranNo}
+			</when>
+			<otherwise></otherwise>
+		</choose>				
+	 </update>
+
+</mapper>
